@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>hungry-ghost</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.16/addons/p5.sound.js"></script>
+  </head>
+
+  <body>
+    <h1>はらぺこおばけ</h1>
+    <div>
+      <div>あなたのID: <span id="myid"></span></div>
+      <div>
+        ルームID: <input id="room" type="text" size="10" value="room001" />
+      </div>
+      <button id="connect">ルームに入る</button>
+      <div>
+        スマホをコントローラーとして傾けて操作するゲームです。<br /><a
+          href="https://5337s.sse.codesandbox.io/smart.html"
+          >こちら</a
+        >(https://5337s.sse.codesandbox.io/smart.html)をスマホで開いて接続してね！<br />受信した情報はコンソールログで確認してください<br />ルームに入ってからゲームを始めてね。<br />スタートを押すとケーキが勝手に移動するよ！沢山食べよう！！
+      </div>
+      <button id="start" onclick="setup()">GAME START!!</button>
+      <button id="stop">STOP</button>
+    </div>
+    <script>
+      let socket = io.connect();
+      let myid;
+
+      let room = document.querySelector("#room").value;
+      let btn = document.querySelector("#connect");
+      let stbtn = document.querySelector("#start");
+      let stop = document.querySelector("#stop");
+
+      let g = 0;
+      let b = 0;
+      let song;
+
+      btn.addEventListener("click", function () {
+        socket.emit("join", room);
+        btn.remove();
+      });
+
+      stbtn.addEventListener("click", function () {
+        setInterval("setup()", 4000);
+        song.loop();
+      });
+
+      stop.addEventListener("click", function () {
+        clearInterval();
+        song.pause();
+      });
+
+      socket.on("mylogin", function (data) {
+        myid = data;
+        document.querySelector("#myid").innerHTML = myid;
+        console.log("あなたのID: ", myid);
+      });
+
+      socket.on("sensor", function (data) {
+        g = parseFloat(data.g);
+        b = parseFloat(data.b);
+        console.log(data);
+        console.log(g, b);
+      });
+
+      let x = 250;
+      let y = 250;
+      let speed = 0.03;
+      var bgimg, ghost, angry, enemy, happy, ally;
+      // let cakes = ["ally", "enemy"];
+      // let cake = random(cakes);
+      let targetX;
+      let targetY;
+
+      function preload() {
+        bgimg = loadImage("stamps/backhw.png");
+        ghost = loadImage("stamps/helloween05.png");
+        angry = loadImage("stamps/helloween03.png");
+        enemy = loadImage("stamps/noel.png");
+        happy = loadImage("stamps/helloween04.png");
+        ally = loadImage("stamps/cake.png");
+        //音楽の再生
+        soundFormats("ogg", "mp3");
+        song = loadSound("stamps/Looser.mp3");
+      }
+
+      function setup() {
+        createCanvas(500, 500);
+        background(0);
+        imageMode(CENTER);
+        targetX = random(width);
+        targetY = random(height);
+      }
+
+      function draw() {
+        background(0);
+
+        x = x + speed * g;
+        y = y + speed * b;
+
+        //壁を超えない
+        let max = 480;
+        let min = 25;
+
+        if (x > max) {
+          x = max;
+        } else if (x < min) {
+          x = min;
+        }
+        if (y > max) {
+          y = max;
+        } else if (y < min + 10) {
+          y = min + 10;
+        }
+
+        //allyの判定範囲
+        let distance = Math.sqrt(
+          (x - targetX) * (x - targetX) + (y - targetY) * (y - targetY)
+        );
+
+        image(ally, targetX, targetY, 50, 50);
+        if (distance < 30) {
+          background(0);
+          image(bgimg, 200, 200, 300, 300);
+          // let count = 1;
+          // count++;
+          // console.log(count);
+        }
+        image(happy, x, y, 100, 100);
+        //image(happy, x, y, 100, 100);
+      }
+    </script>
+  </body>
+</html>

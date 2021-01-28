@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MOTEBUuu!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <center>
+      <h1>MOTEBUuu!</h1>
+      <h3>
+        MOTEBUuu!とは、<br />
+        3Dモデルを好きにモテアソブことができる<br />
+        ちょっと変わったアプリです。<br /><br />
+        あなたも気分転換に…モテブーしよう！<br /><br />
+      </h3>
+      <p id="line"></p>
+      <h2>HOW TO PLAY</h2>
+      <div>
+        <div>
+          Step 1. あなたのセンサーとなるスマホでこちらをクリック<br />
+          <a href="control.html">Click here!</a> (for your smartphone)<br />
+        </div>
+        <br />
+        <div>
+          Step 2.
+          スマホ画面から同じルーム名に設定し、[接続]ボタンをクリック＆許可
+        </div>
+        <br />
+        <div>Step 3. 下の[はじめる]ボタンでスタート！<br /><br /></div>
+        <p id="line"></p>
+        <div>ユーザーID: <span id="myid"></span></div>
+        <div>
+          ルーム名:
+          <input id="room" type="text" size="10" value="snowman" /><br /><br />
+        </div>
+        <button id="connect">はじめる</button><br /><br />
+      </div>
+
+      <div id="canvas"></div>
+
+      <button id="speak">話す</button>
+      <p class="center-box"><img id="mic" src="micoff.svg" width="10%" /></p>
+      <div id="result-div" class="large-text"></div>
+      <script>
+        let socket = io.connect();
+        let myid;
+
+        let room = document.querySelector("#room").value;
+        let btn = document.querySelector("#connect");
+        let b = 0;
+        let g = 0;
+
+        btn.addEventListener("click", function () {
+          socket.emit("join", room);
+          btn.remove();
+        });
+
+        socket.on("mylogin", function (data) {
+          myid = data;
+          document.querySelector("#myid").innerHTML = myid;
+          console.log("あなたのID: ", myid);
+        });
+
+        socket.on("sensor", function (data) {
+          g = parseFloat(data.g);
+          b = parseFloat(data.b);
+        });
+
+        let x = 0;
+        let y = 0;
+        let r = 40;
+        let speed = 0.03;
+        let cat;
+        let imgf, imgb;
+
+        function preload() {
+          imgf = loadImage("img/snowmanface.jpg");
+          imgb = loadImage("img/snowmanbody.jpg");
+        }
+
+        function setup() {
+          let canvas = createCanvas(800, 800, WEBGL);
+          canvas.parent("canvas");
+          camera(0, 800, 100, 0, 0, 0, 0, 1, 0);
+          noStroke();
+        }
+
+        function draw() {
+          background(200);
+          orbitControl();
+
+          ambientLight(245);
+          pointLight(250, 10, 10, 800);
+          // ambientLight(50, 50, 50);
+          directionalLight(250, -1, -1, -1);
+          //pointLight(20, 20, 100, 0, 0, 800);
+
+          /*// 板の動き
+          push();
+          rotateX((-PI * b) / 180);
+          rotateY((PI * g) / 180);
+          translate(0, 0, -50);
+          box(800, 800, 30);
+          pop();*/
+
+          // ボールの動き bottom
+          push();
+          x = x + speed * g;
+          y = y + speed * b;
+
+          // ボールの高さを板の傾きに合わせて高さを変える
+          translate(x, y, -x * sin((PI * g) / 180) - y * sin((PI * b) / 180));
+          //translate(x, y, 0); // 高さを変えない場合
+
+          texture(imgb);
+          rotateX(2);
+          //fill(255);
+          sphere(r);
+          if (x > width / 2) x = width / 2;
+          if (y > width / 2) y = width / 2;
+          if (x < -width / 2) x = -width / 2;
+          if (y < -width / 2) y = -width / 2;
+          pop();
+
+          // up
+          push();
+          x = x + speed * g;
+          y = y + speed * b;
+
+          // ボールの高さを板の傾きに合わせて高さを変える
+          translate(
+            x,
+            y,
+            -x * sin((PI * g) / 180) - y * sin((PI * b) / 180) + 65
+          );
+          //translate(x, y, 0); // 高さを変えない場合
+
+          texture(imgf);
+          rotateX(1.7);
+          rotateZ(3);
+          //fill(255, 255, 255);
+          sphere(r - 10);
+          if (x > width / 2) x = width / 2;
+          if (y > width / 2) y = width / 2;
+          if (x < -width / 2) x = -width / 2;
+          if (y < -width / 2) y = -width / 2;
+          pop();
+        }
+        /*
+        //--------------------------------------
+        // 音声認識
+        // 発話機能をインスタンス化
+        let msg = new SpeechSynthesisUtterance();
+        let voices = window.speechSynthesis.getVoices();
+        
+        function speak(text) {
+          // 以下オプション設定
+          msg.voice = voices[7]; // 7:Google 日本人 ja-JP ※他は英語のみ
+          msg.volume = 1.0; // 音量 min 0 ~ max 1
+          msg.rate = 2; // 速度 min 0 ~ max 10
+          msg.pitch = 1.0; // 音程 min 0 ~ max 2
+
+          msg.text = text; // 喋る内容
+          msg.lang = "ja-JP"; // en-US or ja-JP
+          // msg.lang = 'en-US'; // en-US or ja-JP
+
+          // 発話実行
+          speechSynthesis.speak(msg);
+        }
+
+        // 終了時の処理
+        msg.onend = function (event) {
+          console.log("End: ", text);
+        };
+
+        let text = "わああああああああああ";
+        let text2 = "僕はゆきだるま。いつでも遊びに来てね！";
+
+        let button = document.querySelector("#connect");
+        button.onclick = function () {
+          speak(text);
+        };
+        let button2 = document.querySelector("#speak");
+        button2.onclick = function () {
+          speak(text2);
+        };*/
+        //-------------------------------------
+
+        const resultDiv = document.querySelector("#result-div");
+        const micDiv = document.querySelector("#mic");
+        let speakingtime = 0;
+
+        // 音声認識機能(Chrome)
+        let rec = new webkitSpeechRecognition();
+        let stopped = true;
+        rec.continuous = true;
+        rec.interimResults = false;
+        rec.lang = "ja-JP";
+
+        micDiv.onclick = function () {
+          if (stopped == true) {
+            stopped = false;
+            resultDiv.innerHTML = "";
+            rec.start();
+          } else {
+            stopped = true;
+            rec.stop();
+          }
+        };
+
+        rec.onstart = function () {
+          console.log("on start");
+          micDiv.setAttribute("src", "micon.svg");
+          speakingtime = 0;
+        };
+
+        rec.onend = function () {
+          console.log("on end");
+          micDiv.setAttribute("src", "micoff.svg");
+          if (stopped == false) {
+            setTimeout(function () {
+              rec.start();
+            }, speakingtime);
+          }
+        };
+
+        rec.onresult = function (e) {
+          rec.stop();
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) {
+              console.log(e);
+              let text = e.results[i][0].transcript;
+              resultDiv.innerHTML = text;
+              text = dialogue(text);
+              console.log(text);
+              speakingtime = text.length * 200;
+              console.log("estimate:", speakingtime, "ms");
+              speak(text);
+            }
+          }
+        };
+
+        function dialogue(input) {
+          if (/雪だるま/.test(input)) {
+            return "冬が一番だよ";
+          } else {
+            return "あんまりいじめないでね";
+          }
+        }
+
+        // 発話機能をインスタンス化
+        let msg = new SpeechSynthesisUtterance();
+
+        function speak(text) {
+          msg.volume = 1.0; // 音量 min 0 ~ max 1
+          msg.rate = 1.0; // 速度 min 0 ~ max 10
+          msg.pitch = 1.0; // 音程 min 0 ~ max 2
+
+          msg.text = text; // 喋る内容
+          msg.lang = "ja-JP"; // en-US or ja-JP
+          //msg.lang = "en-US"; // en-US or ja-JP
+
+          // 発話実行
+          speechSynthesis.speak(msg);
+        }
+
+        // 終了時の処理
+        msg.onend = function (event) {
+          console.log("喋った時間：" + event.elapsedTime + "ms");
+        };
+
+        let text1 = "わああああああああああ";
+        let text2 = "僕はゆきだるま。いつでも遊びに来てね！";
+
+        let button = document.querySelector("#connect");
+        button.onclick = function () {
+          speak(text1);
+        };
+        let button2 = document.querySelector("#speak");
+        button2.onclick = function () {
+          speak(text2);
+        };
+      </script>
+    </center>
+  </body>
+</html>

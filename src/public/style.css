@@ -1,0 +1,48 @@
+@charset "UTF-8";
+
+header {
+  background-color: #95c0ec;
+}
+
+body {
+  background-color: white;
+  color: slategrey;
+}
+
+h1 {
+  color: #95c0ec;
+}
+
+h2 {
+  color: palevioletred;
+}
+
+#line {
+  border-top: 9px dotted #95c0ec;
+}
+
+#connect {
+  padding: 1em;
+  font-weight: bold;
+  color: #fff;
+  background-color: #95c0ec;
+  border-radius: 100vh;
+}
+#connect:hover {
+  color: #fff;
+  background: #badafa;
+  cursor: pointer;
+}
+
+#speak {
+  padding: 1em;
+  font-weight: bold;
+  color: #fff;
+  background-color: #95c0ec;
+  border-radius: 100vh;
+}
+#speak:hover {
+  color: #fff;
+  background: #badafa;
+  cursor: pointer;
+}
